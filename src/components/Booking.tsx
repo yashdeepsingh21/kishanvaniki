@@ -43,6 +43,9 @@ export default function Booking() {
     if (!form.plantType) { setError('Please select a plant type.'); return; }
     if (!form.quantity.trim()) { setError('Please enter the quantity.'); return; }
 
+    const wirewebToken = import.meta.env.VITE_WIREWEB_TOKEN;
+    const wirewebSession = import.meta.env.VITE_WIREWEB_SESSION;
+
     setError('');
     setSubmitting(true);
 
@@ -61,6 +64,70 @@ export default function Booking() {
       setError('Something went wrong. Please try again.');
       return;
     }
+    var cleanMobile = form.mobile;
+
+    // Send WhatsApp message
+    const whatsappMessage = `
+    🌱 New Booking Inquiry
+
+    👤 Name: ${form.fullName}
+    📞 Mobile: ${cleanMobile}
+    📍 State: ${form.state}
+    🪴 Plant Type: ${form.plantType}
+    📦 Quantity: ${form.quantity}
+
+    📝 Message:
+    ${form.message || 'No message'}
+    `;
+
+    // try {
+    //   await fetch('https://app.wireweb.co.in/api/v1/messages', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       Authorization: `Bearer ${wirewebToken}`,
+    //     },
+    //     body: JSON.stringify({
+    //       sessionId: wirewebSession,
+    //       to: "9870882354", // your WhatsApp number
+    //       text: whatsappMessage,
+    //     }),
+    //   });
+    // } catch (err) {
+    //   console.error('WhatsApp send failed:', err);
+    // }
+
+    async function sendWhatsAppMessage(payload: { sessionId: string; to: string; text: string }) {
+    try {
+      const response = await fetch('https://app.wireweb.co.in/api/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${wirewebToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('WhatsApp send failed:', err);
+      throw err;
+    }
+  }
+
+  await sendWhatsAppMessage({
+    sessionId: wirewebSession,
+    to: "+919870882354",
+    text: whatsappMessage,
+  });
+
+  await sendWhatsAppMessage({
+    sessionId: wirewebSession,
+    to: "+91"+cleanMobile,
+    text: "New booking inquiry received for Kishan Vaniki High Tech Nursery for plants we will contact you within 24 hours",
+  });
+
 
     setSubmitted(true);
   };
